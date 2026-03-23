@@ -1,0 +1,93 @@
+column,dtype,missing_count,missing_ratio
+id,int64,0,0.0
+Flow ID,str,0,0.0
+Src IP,str,0,0.0
+Src Port,int64,0,0.0
+Dst IP,str,0,0.0
+Dst Port,int64,0,0.0
+Protocol,int64,0,0.0
+Timestamp,str,0,0.0
+Flow Duration,int64,0,0.0
+Total Fwd Packet,int64,0,0.0
+Total Bwd packets,int64,0,0.0
+Total Length of Fwd Packet,int64,0,0.0
+Total Length of Bwd Packet,int64,0,0.0
+Fwd Packet Length Max,int64,0,0.0
+Fwd Packet Length Min,int64,0,0.0
+Fwd Packet Length Mean,float64,0,0.0
+Fwd Packet Length Std,float64,0,0.0
+Bwd Packet Length Max,int64,0,0.0
+Bwd Packet Length Min,int64,0,0.0
+Bwd Packet Length Mean,float64,0,0.0
+Bwd Packet Length Std,float64,0,0.0
+Flow Bytes/s,float64,0,0.0
+Flow Packets/s,float64,0,0.0
+Flow IAT Mean,float64,0,0.0
+Flow IAT Std,float64,0,0.0
+Flow IAT Max,int64,0,0.0
+Flow IAT Min,int64,0,0.0
+Fwd IAT Total,int64,0,0.0
+Fwd IAT Mean,float64,0,0.0
+Fwd IAT Std,float64,0,0.0
+Fwd IAT Max,int64,0,0.0
+Fwd IAT Min,int64,0,0.0
+Bwd IAT Total,int64,0,0.0
+Bwd IAT Mean,float64,0,0.0
+Bwd IAT Std,float64,0,0.0
+Bwd IAT Max,int64,0,0.0
+Bwd IAT Min,int64,0,0.0
+Fwd PSH Flags,int64,0,0.0
+Bwd PSH Flags,int64,0,0.0
+Fwd URG Flags,int64,0,0.0
+Bwd URG Flags,int64,0,0.0
+Fwd RST Flags,int64,0,0.0
+Bwd RST Flags,int64,0,0.0
+Fwd Header Length,int64,0,0.0
+Bwd Header Length,int64,0,0.0
+Fwd Packets/s,float64,0,0.0
+Bwd Packets/s,float64,0,0.0
+Packet Length Min,int64,0,0.0
+Packet Length Max,int64,0,0.0
+Packet Length Mean,float64,0,0.0
+Packet Length Std,float64,0,0.0
+Packet Length Variance,float64,0,0.0
+FIN Flag Count,int64,0,0.0
+SYN Flag Count,int64,0,0.0
+RST Flag Count,int64,0,0.0
+PSH Flag Count,int64,0,0.0
+ACK Flag Count,int64,0,0.0
+URG Flag Count,int64,0,0.0
+CWR Flag Count,int64,0,0.0
+ECE Flag Count,int64,0,0.0
+Down/Up Ratio,float64,0,0.0
+Average Packet Size,float64,0,0.0
+Fwd Segment Size Avg,float64,0,0.0
+Bwd Segment Size Avg,float64,0,0.0
+Fwd Bytes/Bulk Avg,int64,0,0.0
+Fwd Packet/Bulk Avg,int64,0,0.0
+Fwd Bulk Rate Avg,int64,0,0.0
+Bwd Bytes/Bulk Avg,int64,0,0.0
+Bwd Packet/Bulk Avg,int64,0,0.0
+Bwd Bulk Rate Avg,int64,0,0.0
+Subflow Fwd Packets,int64,0,0.0
+Subflow Fwd Bytes,int64,0,0.0
+Subflow Bwd Packets,int64,0,0.0
+Subflow Bwd Bytes,int64,0,0.0
+FWD Init Win Bytes,int64,0,0.0
+Bwd Init Win Bytes,int64,0,0.0
+Fwd Act Data Pkts,int64,0,0.0
+Fwd Seg Size Min,int64,0,0.0
+Active Mean,float64,0,0.0
+Active Std,float64,0,0.0
+Active Max,int64,0,0.0
+Active Min,int64,0,0.0
+Idle Mean,float64,0,0.0
+Idle Std,float64,0,0.0
+Idle Max,int64,0,0.0
+Idle Min,int64,0,0.0
+ICMP Code,int64,0,0.0
+ICMP Type,int64,0,0.0
+Total TCP Flow Time,int64,0,0.0
+Label,str,0,0.0
+Attempted Category,int64,0,0.0
+Column1,str,322074,0.999987580648166
