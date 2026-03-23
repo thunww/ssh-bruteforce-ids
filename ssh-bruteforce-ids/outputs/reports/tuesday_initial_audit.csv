@@ -90,4 +90,3 @@ ICMP Type,int64,0,0.0
 Total TCP Flow Time,int64,0,0.0
 Label,str,0,0.0
 Attempted Category,int64,0,0.0
-Column1,str,322074,0.999987580648166

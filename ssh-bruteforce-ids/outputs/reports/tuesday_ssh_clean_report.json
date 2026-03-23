@@ -1,0 +1,31 @@
+{
+  "timestamp_parse_failed": 0,
+  "rows_before_timestamp_filter": 4031,
+  "rows_after_timestamp_filter": 4031,
+  "dropped_rows_invalid_timestamp": 0,
+  "dropped_immediate": [
+    "id",
+    "Flow ID",
+    "Src Port",
+    "Dst IP",
+    "Attempted Category",
+    "ICMP Code",
+    "ICMP Type",
+    "Dst Port",
+    "Protocol"
+  ],
+  "dropped_high_missing": [],
+  "dropped_constant": [
+    "Fwd Packet Length Min",
+    "Fwd URG Flags",
+    "Bwd URG Flags",
+    "Packet Length Min",
+    "URG Flag Count",
+    "CWR Flag Count",
+    "ECE Flag Count",
+    "Subflow Fwd Packets",
+    "Subflow Bwd Packets",
+    "Active Std",
+    "Idle Std"
+  ]
+}
