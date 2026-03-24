@@ -1,121 +1,108 @@
+from __future__ import annotations
+
+import json
 import time
-import subprocess
 from collections import defaultdict, deque
-import pandas as pd
+from pathlib import Path
+
 import joblib
+import pandas as pd
 
-MODEL_PATH = "outputs/models/xgb_model.pkl"
+from src.detection.risk_scoring import compute_risk_score
+from src.detection.early_stop import EarlyStopDetector
+from src.realtime.collector import collect_failed_ssh_events_journalctl
+from src.realtime.feature_builder import build_realtime_features, REALTIME_FEATURES
+from src.realtime.blocker import block_ip_iptables
 
-WINDOW_SIZE = 60
-BLOCK_THRESHOLD = 2
-PROB_THRESHOLD = 0.1
+MODEL_PATH = Path("models/xgb_realtime_model.joblib")
+META_PATH = Path("models/xgb_realtime_features.json")
 
-# load model
-model = joblib.load(MODEL_PATH)
+WINDOW_SEC = 60
+POLL_SEC = 5
+MODEL_THRESHOLD = 0.05
 
-# buffer per IP
-buffers = defaultdict(lambda: deque())
-
-# state
-suspicious_count = defaultdict(int)
-blocked_ips = set()
-
-
-def get_ssh_connections():
-    cmd = "ss -tn state established '( dport = :22 or sport = :22 )'"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    lines = result.stdout.split("\n")[1:]
-
-    connections = []
-
-    for line in lines:
-        parts = line.split()
-        if len(parts) < 5:
-            continue
-
-        src = parts[4]
-        ip = src.split(":")[0]
-
-        connections.append({
-            "Src IP": ip,
-            "Timestamp": pd.Timestamp.now()
-        })
-
-    return connections
+event_buffers = defaultdict(lambda: deque())
 
 
-def build_features(df):
-    if len(df) == 0:
-        return None
-
-    df = df.sort_values("Timestamp")
-
-    duration = (df["Timestamp"].max() - df["Timestamp"].min()).total_seconds()
-
-    flow_rate = len(df) / max(duration, 1)
-
-    inter = df["Timestamp"].diff().dt.total_seconds().dropna()
-
-    return {
-        "flow_rate_per_window": flow_rate,
-        "interarrival_std": inter.std() if len(inter) > 0 else 0,
-        "flow_duration_mean": duration
-    }
-
-
-def block_ip(ip):
-    if ip in blocked_ips:
-        return
-
-    print(f"[BLOCK] {ip}")
-
-    subprocess.run(f"sudo iptables -A INPUT -s {ip} -j DROP", shell=True)
-    blocked_ips.add(ip)
+def trim_old_events(buf: deque, now: pd.Timestamp, window_sec: int):
+    while buf and (now - buf[0]["Timestamp"]).total_seconds() > window_sec:
+        buf.popleft()
 
 
 def main():
-    print("=== REALTIME DETECTOR START ===")
+    model = joblib.load(MODEL_PATH)
+
+    if META_PATH.exists():
+        with open(META_PATH, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        expected_features = meta["features"]
+    else:
+        expected_features = REALTIME_FEATURES
+
+    detector = EarlyStopDetector()
+
+    print("=== REALTIME SSH DETECTOR STARTED ===")
+    print("Expected features:", expected_features)
 
     while True:
-        conns = get_ssh_connections()
+        now = pd.Timestamp.now().tz_localize(None)
+        events = collect_failed_ssh_events_journalctl(since=f"{POLL_SEC + 1} seconds ago")
 
-        now = pd.Timestamp.now()
+        for ev in events:
+            ip = ev["Src IP"]
+            event_buffers[ip].append(ev)
 
-        for c in conns:
-            ip = c["Src IP"]
+        all_ips = list(event_buffers.keys())
 
-            buffers[ip].append(now)
+        for ip in all_ips:
+            trim_old_events(event_buffers[ip], now, WINDOW_SEC)
 
-            # remove old
-            while buffers[ip] and (now - buffers[ip][0]).total_seconds() > WINDOW_SIZE:
-                buffers[ip].popleft()
+            if len(event_buffers[ip]) == 0:
+                continue
 
-            df = pd.DataFrame({
-                "Timestamp": list(buffers[ip])
-            })
+            timestamps = [x["Timestamp"] for x in event_buffers[ip]]
+            rst_flags = [x.get("rst_flag", 0) for x in event_buffers[ip]]
+            short_flags = [x.get("short_flag", 1) for x in event_buffers[ip]]
 
-            feats = build_features(df)
+            feats = build_realtime_features(
+                event_times=timestamps,
+                rst_flags=rst_flags,
+                short_flags=short_flags,
+                window_sec=WINDOW_SEC,
+            )
 
             if feats is None:
                 continue
 
-            X = pd.DataFrame([feats])
+            X = pd.DataFrame([feats])[expected_features]
+            model_prob = float(model.predict_proba(X)[0][1])
 
-            prob = model.predict_proba(X)[0][1]
+            risk = compute_risk_score(
+                model_prob=model_prob,
+                flow_rate_per_window=float(feats["flow_rate_per_window"]),
+                interarrival_std=float(feats["interarrival_std"]),
+                rst_flow_ratio=float(feats["rst_flow_ratio"]),
+                short_flow_ratio=float(feats["short_flow_ratio"]),
+            )
 
-            if prob > PROB_THRESHOLD:
-                suspicious_count[ip] += 1
+            decision = detector.decide(
+                src_ip=ip,
+                now=now.to_pydatetime(),
+                risk_score=float(risk["risk_score"]),
+            )
 
-                if suspicious_count[ip] == 1:
-                    print(f"[ALERT] {ip} prob={prob:.3f}")
+            action = decision["action"]
 
-                elif suspicious_count[ip] >= BLOCK_THRESHOLD:
-                    block_ip(ip)
+            print(
+                f"[{now}] ip={ip} events={len(timestamps)} "
+                f"p={model_prob:.3f} risk={risk['risk_score']:.3f} action={action}"
+            )
 
-            else:
-                suspicious_count[ip] = 0
+            if action == "BLOCK":
+                block_ip_iptables(ip)
+                print(f"[BLOCK] iptables DROP added for {ip}")
 
-        time.sleep(2)
+        time.sleep(POLL_SEC)
 
 
 if __name__ == "__main__":

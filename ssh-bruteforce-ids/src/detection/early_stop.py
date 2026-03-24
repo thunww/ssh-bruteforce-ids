@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 
-ALERT_THRESHOLD = 0.45
-BLOCK_THRESHOLD = 0.75
+ALERT_THRESHOLD = 0.1
+BLOCK_THRESHOLD = 0.15
 BLOCK_SECONDS = 300
 
 
@@ -70,7 +70,7 @@ class EarlyStopDetector:
 
         # risk >= block_threshold
         state.consecutive_suspicious += 1
-        if state.consecutive_suspicious >= 2:
+        if state.consecutive_suspicious >= 1:
             state.blocked_until = now + timedelta(seconds=self.block_seconds)
             state.last_action = "BLOCK"
             return {
