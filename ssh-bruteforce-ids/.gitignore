@@ -20,4 +20,8 @@ data/interim/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.db.env
+__pycache__/
+*.pyc
+*.pyc
+.env
