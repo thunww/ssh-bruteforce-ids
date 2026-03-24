@@ -1,0 +1,117 @@
+{
+  "rule_baseline": {
+    "flow_rate_threshold": 0.033333,
+    "interarrival_std_threshold": 0.0,
+    "val_metrics": {
+      "threshold": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "pr_auc": 0.10752688172043011,
+      "tn": 21,
+      "fp": 62,
+      "fn": 10,
+      "tp": 0
+    },
+    "test_metrics": {
+      "threshold": 0.5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "pr_auc": 0.10638297872340426,
+      "tn": 10,
+      "fp": 74,
+      "fn": 10,
+      "tp": 0
+    }
+  },
+  "xgb_full": {
+    "name": "xgb_full",
+    "drop_features": [],
+    "n_features": 73,
+    "best_threshold": 0.1,
+    "val_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526315,
+      "pr_auc": 1.0,
+      "tn": 83,
+      "fp": 0,
+      "fn": 1,
+      "tp": 9
+    },
+    "test_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 0.7,
+      "f1": 0.8235294117647058,
+      "pr_auc": 0.9106382978723404,
+      "tn": 84,
+      "fp": 0,
+      "fn": 3,
+      "tp": 7
+    }
+  },
+  "xgb_drop_flow_rate": {
+    "name": "xgb_drop_flow_rate",
+    "drop_features": [
+      "flow_rate_per_window"
+    ],
+    "n_features": 72,
+    "best_threshold": 0.1,
+    "val_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "pr_auc": 1.0,
+      "tn": 83,
+      "fp": 0,
+      "fn": 0,
+      "tp": 10
+    },
+    "test_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1": 0.9473684210526315,
+      "pr_auc": 1.0,
+      "tn": 84,
+      "fp": 0,
+      "fn": 1,
+      "tp": 9
+    }
+  },
+  "xgb_drop_flow_rate_and_interarrival_std": {
+    "name": "xgb_drop_flow_rate_and_interarrival_std",
+    "drop_features": [
+      "flow_rate_per_window",
+      "interarrival_std"
+    ],
+    "n_features": 71,
+    "best_threshold": 0.1,
+    "val_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "pr_auc": 1.0,
+      "tn": 83,
+      "fp": 0,
+      "fn": 0,
+      "tp": 10
+    },
+    "test_metrics": {
+      "threshold": 0.1,
+      "precision": 1.0,
+      "recall": 0.6,
+      "f1": 0.75,
+      "pr_auc": 1.0,
+      "tn": 84,
+      "fp": 0,
+      "fn": 4,
+      "tp": 6
+    }
+  }
+}

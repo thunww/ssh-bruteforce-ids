@@ -1,0 +1,9 @@
+metric,value
+window_sec,60.0
+step_sec,60.0
+min_flows_per_window,1.0
+num_src_ip,11.0
+num_windows,620.0
+attack_windows,64.0
+benign_windows,556.0
+attack_window_ratio,0.1032258064516129

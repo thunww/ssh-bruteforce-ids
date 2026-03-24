@@ -1,0 +1,11 @@
+{
+  "threshold": 0.1,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "pr_auc": 1.0,
+  "tn": 83,
+  "fp": 0,
+  "fn": 0,
+  "tp": 10
+}
