@@ -1,0 +1,75 @@
+# SSH Brute-force IDS — Production Configuration
+
+# ─── Real-time Detector ───────────────────────────────
+realtime:
+  model_path: "models/xgb_realtime_model.joblib"
+  meta_path: "models/xgb_realtime_features.json"
+  alerts_path: "outputs/alerts.jsonl"
+
+  poll_sec: 5           # tần suất poll journalctl (giây)
+  window_sec: 60        # sliding window per IP (giây)
+  worker_threads: 4     # số worker inference song song
+  monitor_interval: 30  # chu kỳ log CPU/RAM (giây)
+
+# ─── Detection Thresholds ────────────────────────────
+detection:
+  alert_threshold: 0.20    # risk_score >= 0.20 → ALERT
+  block_threshold: 0.40    # risk_score >= 0.40 (2 lần liên tiếp) → BLOCK
+  block_duration_sec: 300  # IP bị block trong 5 phút
+
+# ─── Risk Scoring Weights ────────────────────────────
+risk_scoring:
+  weight_model_prob: 0.60
+  weight_flow_rate: 0.15
+  weight_interarrival: 0.10
+  weight_rst_ratio: 0.10
+  weight_short_ratio: 0.05
+
+  # normalization denominators
+  flow_rate_norm: 0.5     # flow_rate_per_window / flow_rate_norm
+  interarrival_norm: 5.0  # interarrival_std / interarrival_norm
+
+# ─── Feature Engineering ─────────────────────────────
+features:
+  window_sec: 60
+  step_sec: 60
+  min_flows_per_window: 1
+  short_flow_threshold: 1.0    # Flow Duration <= 1s → short flow
+  high_rate_threshold: 100.0   # Flow Packets/s >= 100 → high rate
+
+# ─── Training ─────────────────────────────────────────
+training:
+  random_state: 42
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+  rf:
+    n_estimators: [200, 300]
+    max_depth: [8, 12, null]
+    min_samples_leaf: [1, 2]
+    class_weight: "balanced"
+    cv_folds: 5
+
+  xgb:
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.05
+    subsample: 0.9
+    colsample_bytree: 0.9
+    early_stopping_rounds: 30
+
+  lstm:
+    seq_len: 5
+    hidden_size: 64
+    num_layers: 2
+    dropout: 0.3
+    epochs: 60
+    batch_size: 32
+    lr: 0.001
+    patience: 15
+
+# ─── Logging ──────────────────────────────────────────
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(threadName)s] %(levelname)s — %(message)s"

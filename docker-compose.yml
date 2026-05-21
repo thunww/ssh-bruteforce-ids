@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  ids-detector:
+    build: .
+    container_name: ssh-ids-detector
+    restart: unless-stopped
+
+    # cần NET_ADMIN để gọi iptables
+    cap_add:
+      - NET_ADMIN
+
+    # mount journalctl socket từ host để đọc SSH log
+    volumes:
+      - /run/systemd/journal:/run/systemd/journal:ro
+      - ./outputs:/app/outputs        # persist alerts và metrics
+      - ./models:/app/models:ro       # models read-only
+      - ./config:/app/config:ro       # config read-only
+
+    environment:
+      - IDS_WINDOW_SEC=60
+      - IDS_POLL_SEC=5
+      - IDS_WORKERS=4
+      - IDS_MONITOR_INTERVAL=30
+      - IDS_ALERTS_PATH=/app/outputs/alerts.jsonl
+
+    # journalctl cần đọc host journal
+    pid: host
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # Optional: alert viewer — tail alerts.jsonl real-time
+  alert-viewer:
+    image: python:3.10-slim
+    container_name: ssh-ids-alert-viewer
+    depends_on:
+      - ids-detector
+    volumes:
+      - ./outputs:/outputs:ro
+    command: >
+      sh -c "tail -f /outputs/alerts.jsonl 2>/dev/null ||
+             (echo 'Waiting for alerts...' && sleep 5 && tail -f /outputs/alerts.jsonl)"
+    restart: unless-stopped

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+.venv-linux/
+venv/
+
+# Data artifacts
+data/raw/
+data/interim/
+data/processed/
+
+# Generated outputs
+outputs/reports/
+outputs/metrics/
+outputs/figures/
+
+# Leftovers
+hydra.restore
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

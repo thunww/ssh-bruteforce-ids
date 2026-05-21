@@ -1,0 +1,14 @@
+data/raw/
+data/interim/
+data/processed/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+docs/
+outputs/figures/
+outputs/reports/
+outputs/metrics/
+*.joblib.bak
