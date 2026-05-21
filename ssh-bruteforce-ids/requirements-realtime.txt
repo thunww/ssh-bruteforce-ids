@@ -1,0 +1,6 @@
+pandas
+xgboost
+scikit-learn
+joblib
+requests
+python-dotenv

@@ -1,0 +1,28 @@
+{
+  "name": "xgb_full",
+  "drop_features": [],
+  "n_features": 73,
+  "best_threshold": 0.1,
+  "val_metrics": {
+    "threshold": 0.1,
+    "precision": 1.0,
+    "recall": 0.9,
+    "f1": 0.9473684210526315,
+    "pr_auc": 1.0,
+    "tn": 83,
+    "fp": 0,
+    "fn": 1,
+    "tp": 9
+  },
+  "test_metrics": {
+    "threshold": 0.1,
+    "precision": 1.0,
+    "recall": 0.7,
+    "f1": 0.8235294117647058,
+    "pr_auc": 0.9106382978723404,
+    "tn": 84,
+    "fp": 0,
+    "fn": 3,
+    "tp": 7
+  }
+}

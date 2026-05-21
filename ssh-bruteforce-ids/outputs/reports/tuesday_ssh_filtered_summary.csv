@@ -1,0 +1,6 @@
+metric,value
+rows_after_filter,4031.0
+benign_count,1043.0
+attack_count,2988.0
+benign_ratio,0.2587447283552468
+attack_ratio,0.7412552716447531

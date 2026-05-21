@@ -1,0 +1,74 @@
+column,dtype,missing_count,missing_ratio,nunique
+Src IP,str,0,0.0,11
+Timestamp,str,0,0.0,2544
+Flow Duration,int64,0,0.0,4020
+Total Fwd Packet,int64,0,0.0,38
+Total Bwd packets,int64,0,0.0,36
+Total Length of Fwd Packet,int64,0,0.0,49
+Total Length of Bwd Packet,int64,0,0.0,30
+Fwd Packet Length Max,int64,0,0.0,12
+Fwd Packet Length Mean,float64,0,0.0,128
+Fwd Packet Length Std,float64,0,0.0,132
+Bwd Packet Length Max,int64,0,0.0,3
+Bwd Packet Length Min,int64,0,0.0,2
+Bwd Packet Length Mean,float64,0,0.0,67
+Bwd Packet Length Std,float64,0,0.0,93
+Flow Bytes/s,float64,0,0.0,4016
+Flow Packets/s,float64,0,0.0,4026
+Flow IAT Mean,float64,0,0.0,4026
+Flow IAT Std,float64,0,0.0,4024
+Flow IAT Max,int64,0,0.0,3946
+Flow IAT Min,int64,0,0.0,64
+Fwd IAT Total,int64,0,0.0,4012
+Fwd IAT Mean,float64,0,0.0,4016
+Fwd IAT Std,float64,0,0.0,4024
+Fwd IAT Max,int64,0,0.0,3868
+Fwd IAT Min,int64,0,0.0,604
+Bwd IAT Total,int64,0,0.0,4016
+Bwd IAT Mean,float64,0,0.0,4020
+Bwd IAT Std,float64,0,0.0,4024
+Bwd IAT Max,int64,0,0.0,3945
+Bwd IAT Min,int64,0,0.0,73
+Fwd PSH Flags,int64,0,0.0,20
+Bwd PSH Flags,int64,0,0.0,18
+Fwd RST Flags,int64,0,0.0,2
+Bwd RST Flags,int64,0,0.0,6
+Fwd Header Length,int64,0,0.0,66
+Bwd Header Length,int64,0,0.0,62
+Fwd Packets/s,float64,0,0.0,4025
+Bwd Packets/s,float64,0,0.0,4025
+Packet Length Max,int64,0,0.0,8
+Packet Length Mean,float64,0,0.0,165
+Packet Length Std,float64,0,0.0,212
+Packet Length Variance,float64,0,0.0,212
+FIN Flag Count,int64,0,0.0,6
+SYN Flag Count,int64,0,0.0,4
+RST Flag Count,int64,0,0.0,6
+PSH Flag Count,int64,0,0.0,28
+ACK Flag Count,int64,0,0.0,62
+Down/Up Ratio,float64,0,0.0,92
+Average Packet Size,float64,0,0.0,165
+Fwd Segment Size Avg,float64,0,0.0,128
+Bwd Segment Size Avg,float64,0,0.0,67
+Fwd Bytes/Bulk Avg,int64,0,0.0,35
+Fwd Packet/Bulk Avg,int64,0,0.0,3
+Fwd Bulk Rate Avg,int64,0,0.0,975
+Bwd Bytes/Bulk Avg,int64,0,0.0,31
+Bwd Packet/Bulk Avg,int64,0,0.0,5
+Bwd Bulk Rate Avg,int64,0,0.0,998
+Subflow Fwd Bytes,int64,0,0.0,37
+Subflow Bwd Bytes,int64,0,0.0,51
+FWD Init Win Bytes,int64,0,0.0,4
+Bwd Init Win Bytes,int64,0,0.0,11
+Fwd Act Data Pkts,int64,0,0.0,19
+Fwd Seg Size Min,int64,0,0.0,3
+Active Mean,float64,0,0.0,5
+Active Max,int64,0,0.0,5
+Active Min,int64,0,0.0,5
+Idle Mean,float64,0,0.0,5
+Idle Max,int64,0,0.0,5
+Idle Min,int64,0,0.0,5
+Total TCP Flow Time,int64,0,0.0,4020
+Label,str,0,0.0,3
+target,int64,0,0.0,2
+ParsedTime,datetime64[us],0,0.0,2544

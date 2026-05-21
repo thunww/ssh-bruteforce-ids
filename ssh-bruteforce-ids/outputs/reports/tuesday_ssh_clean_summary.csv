@@ -1,0 +1,8 @@
+metric,value
+rows_input,4031
+rows_clean,4031
+cols_clean,73
+attack_count,2988
+benign_count,1043
+timestamp_parse_failed,0
+dropped_rows_invalid_timestamp,0

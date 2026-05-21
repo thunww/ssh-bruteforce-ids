@@ -95,7 +95,7 @@ mv Tuesday-WorkingHours.pcap_ISCX.csv data/raw/tuesday.csv
 ### Cài đặt dependencies
 
 ```bash
-git clone <repo>
+git clone https://github.com/thunww/ssh-bruteforce-ids.git
 cd ssh-bruteforce-ids
 pip install -r requirements.txt
 ```
