@@ -46,6 +46,12 @@ Hệ thống phát hiện tấn công SSH brute-force theo thời gian thực, s
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Cập nhật real-time detector:** ngoài cửa sổ ML ngắn 60 giây, detector hiện giữ thêm bộ đếm dài hạn theo IP/username để bắt low-and-slow brute-force:
+
+- `failed_5m >= 12` → `ALERT`, reason `LOW_AND_SLOW_5M`
+- `failed_15m >= 24` → `BLOCK`, reason `LOW_AND_SLOW_15M`
+- Log SSH được deduplicate để tránh đếm trùng do `journalctl --since` có overlap giữa các lần poll.
+
 ### Công nghệ sử dụng
 
 | Thành phần | Công nghệ |
@@ -231,6 +237,10 @@ BLOCKED → IP đã bị chặn, giữ nguyên 5 phút
 | `IDS_WORKERS` | `4` | Số worker threads |
 | `IDS_MONITOR_INTERVAL` | `30` | Chu kỳ log CPU/RAM (giây) |
 | `IDS_ALERTS_PATH` | `outputs/alerts.jsonl` | File ghi alert |
+| `IDS_LOW_SLOW_ALERT_WINDOW_SEC` | `300` | Cửa sổ phát hiện low-and-slow mức alert |
+| `IDS_LOW_SLOW_BLOCK_WINDOW_SEC` | `900` | Cửa sổ phát hiện low-and-slow mức block |
+| `IDS_LOW_SLOW_ALERT_COUNT` | `12` | Số failed login trong 5 phút để ALERT |
+| `IDS_LOW_SLOW_BLOCK_COUNT` | `24` | Số failed login trong 15 phút để BLOCK |
 
 Ví dụ chạy với config tùy chỉnh:
 ```bash
@@ -246,6 +256,15 @@ sudo IDS_WINDOW_SEC=30 IDS_WORKERS=8 \
 | `ALERT_THRESHOLD` | 0.20 | Risk score ≥ 0.20 → ALERT |
 | `BLOCK_THRESHOLD` | 0.40 | Risk score ≥ 0.40 liên tiếp 2 lần → BLOCK |
 | `BLOCK_SECONDS` | 300 | Thời gian block IP (giây) |
+| `LOW_SLOW_ALERT_COUNT_5M` | 12 | Failed login trong 5 phút ≥ 12 → ALERT |
+| `LOW_SLOW_BLOCK_COUNT_15M` | 24 | Failed login trong 15 phút ≥ 24 → BLOCK |
+
+Khi detector khởi động đúng phiên bản mới, log sẽ có:
+
+```text
+Low-and-slow thresholds: failed_300s>=12 ALERT, failed_900s>=24 BLOCK
+Consumer started (window_sec=60, retained_window_sec=900)
+```
 
 ---
 
@@ -326,7 +345,13 @@ tail -f outputs/alerts.jsonl
 
 Output mẫu:
 ```json
-{"ip": "192.168.1.10", "now": "2026-05-21 22:44:08", "event_count": 44, "model_prob": 0.997, "risk_score": 0.804, "action": "BLOCK", "consecutive_suspicious": 2}
+{"ip": "172.29.139.144", "username": "than", "now": "2026-06-10 21:20:44.404857", "event_count": 44, "failed_5m": 44, "failed_15m": 44, "model_prob": 0.9973, "risk_score": 0.8762, "action": "BLOCK", "reason": "RISK_THRESHOLD", "consecutive_suspicious": 11}
+```
+
+Ví dụ alert low-and-slow:
+
+```json
+{"ip": "172.29.139.144", "username": "than", "event_count": 3, "failed_5m": 12, "failed_15m": 12, "model_prob": 0.0027, "risk_score": 0.15, "action": "ALERT", "reason": "LOW_AND_SLOW_5M", "consecutive_suspicious": 1}
 ```
 
 ### Xem log detector
@@ -404,6 +429,12 @@ sudo PYTHONPATH=... .venv/bin/python scripts/09_realtime_detector.py
 **Detector không phát hiện tấn công (stuck ở ALERT)**
 - Tăng số lần thử của hydra: `-t 8` thay vì `-t 4`
 - Hoặc hạ `BLOCK_THRESHOLD` trong `src/detection/early_stop.py` từ `0.40` xuống `0.25`
+
+**Detector không phát hiện low-and-slow**
+- Kiểm tra detector đã restart sau khi cập nhật code chưa. Log khởi động phải có `Low-and-slow thresholds`.
+- Kiểm tra SSH log thật sự có failed login: `journalctl -u ssh --since "20 minutes ago" --no-pager | grep "Failed password"`.
+- Không nên hạ `ALERT_THRESHOLD`/`BLOCK_THRESHOLD` bừa vì dễ tăng false positive. Ưu tiên chỉnh `IDS_LOW_SLOW_ALERT_COUNT` và `IDS_LOW_SLOW_BLOCK_COUNT`.
+- Với kịch bản test hiện tại, kỳ vọng sau cải tiến là `reason=LOW_AND_SLOW_5M` khi đủ 12 failed login trong 5 phút.
 
 ---
 

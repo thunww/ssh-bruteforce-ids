@@ -42,6 +42,10 @@ WINDOW_SEC = int(os.getenv("IDS_WINDOW_SEC", "60"))
 POLL_SEC = int(os.getenv("IDS_POLL_SEC", "5"))
 WORKER_THREADS = int(os.getenv("IDS_WORKERS", "4"))
 MONITOR_INTERVAL = int(os.getenv("IDS_MONITOR_INTERVAL", "30"))
+LOW_SLOW_ALERT_WINDOW_SEC = int(os.getenv("IDS_LOW_SLOW_ALERT_WINDOW_SEC", "300"))
+LOW_SLOW_BLOCK_WINDOW_SEC = int(os.getenv("IDS_LOW_SLOW_BLOCK_WINDOW_SEC", "900"))
+LOW_SLOW_ALERT_COUNT = int(os.getenv("IDS_LOW_SLOW_ALERT_COUNT", "12"))
+LOW_SLOW_BLOCK_COUNT = int(os.getenv("IDS_LOW_SLOW_BLOCK_COUNT", "24"))
 
 # ──────────────────────────────────────────────
 # Logging
@@ -62,8 +66,13 @@ inference_queue: Queue = Queue(maxsize=1_000)
 # Per-IP sliding window buffer — protected by a lock
 _buffer_lock = threading.Lock()
 event_buffers: dict[str, deque] = defaultdict(deque)
+seen_event_keys: set[tuple[str, str]] = set()
+seen_event_order: deque = deque()
 
-detector = EarlyStopDetector()
+detector = EarlyStopDetector(
+    low_slow_alert_count_5m=LOW_SLOW_ALERT_COUNT,
+    low_slow_block_count_15m=LOW_SLOW_BLOCK_COUNT,
+)
 _detector_lock = threading.Lock()
 
 _stop_event = threading.Event()
@@ -75,6 +84,48 @@ _stop_event = threading.Event()
 def _trim_old_events(buf: deque, now: pd.Timestamp, window_sec: int) -> None:
     while buf and (now - buf[0]["Timestamp"]).total_seconds() > window_sec:
         buf.popleft()
+
+
+def _event_key(ev: dict) -> tuple[str, str]:
+    return (str(ev.get("Timestamp")), str(ev.get("raw", "")))
+
+
+def _remember_event(ev: dict, now: pd.Timestamp) -> bool:
+    key = _event_key(ev)
+    if key in seen_event_keys:
+        return False
+
+    seen_event_keys.add(key)
+    seen_event_order.append((key, now))
+
+    dedupe_window_sec = max(LOW_SLOW_BLOCK_WINDOW_SEC, WINDOW_SEC) + POLL_SEC + 60
+    while seen_event_order:
+        old_key, seen_at = seen_event_order[0]
+        if (now - seen_at).total_seconds() <= dedupe_window_sec:
+            break
+        seen_event_order.popleft()
+        seen_event_keys.discard(old_key)
+
+    return True
+
+
+def _count_events_since(events: list[dict], now: pd.Timestamp, seconds: int) -> int:
+    return sum(
+        1
+        for ev in events
+        if (now - ev["Timestamp"]).total_seconds() <= seconds
+    )
+
+
+def _most_common_username(events: list[dict]) -> str | None:
+    counts: dict[str, int] = defaultdict(int)
+    for ev in events:
+        username = ev.get("Username")
+        if username:
+            counts[str(username)] += 1
+    if not counts:
+        return None
+    return max(counts.items(), key=lambda item: item[1])[0]
 
 
 def _write_alert(record: dict) -> None:
@@ -105,7 +156,12 @@ def producer_thread() -> None:
 # Consumer thread: event_queue → per-IP buffers → inference_queue
 # ──────────────────────────────────────────────
 def consumer_thread() -> None:
-    log.info("Consumer started (window_sec=%d)", WINDOW_SEC)
+    retained_window_sec = max(WINDOW_SEC, LOW_SLOW_BLOCK_WINDOW_SEC)
+    log.info(
+        "Consumer started (window_sec=%d, retained_window_sec=%d)",
+        WINDOW_SEC,
+        retained_window_sec,
+    )
     while not _stop_event.is_set():
         # Drain all available events first
         drained = False
@@ -113,7 +169,10 @@ def consumer_thread() -> None:
             try:
                 ev = event_queue.get(timeout=1.0)
                 ip = ev["Src IP"]
+                now_for_dedupe = pd.Timestamp.now().tz_localize(None)
                 with _buffer_lock:
+                    if not _remember_event(ev, now_for_dedupe):
+                        continue
                     event_buffers[ip].append(ev)
                 drained = True
             except Empty:
@@ -126,15 +185,33 @@ def consumer_thread() -> None:
 
         for ip in all_ips:
             with _buffer_lock:
-                _trim_old_events(event_buffers[ip], now, WINDOW_SEC)
-                buf_snapshot = list(event_buffers[ip])
+                _trim_old_events(event_buffers[ip], now, retained_window_sec)
+                long_buf_snapshot = list(event_buffers[ip])
 
-            if not buf_snapshot:
+            if not long_buf_snapshot:
                 continue
 
-            timestamps = [x["Timestamp"] for x in buf_snapshot]
-            rst_flags = [x.get("rst_flag", 0) for x in buf_snapshot]
-            short_flags = [x.get("short_flag", 1) for x in buf_snapshot]
+            window_snapshot = [
+                x for x in long_buf_snapshot
+                if (now - x["Timestamp"]).total_seconds() <= WINDOW_SEC
+            ]
+            if not window_snapshot:
+                continue
+
+            timestamps = [x["Timestamp"] for x in window_snapshot]
+            rst_flags = [x.get("rst_flag", 0) for x in window_snapshot]
+            short_flags = [x.get("short_flag", 1) for x in window_snapshot]
+            failed_5m = _count_events_since(
+                long_buf_snapshot,
+                now,
+                LOW_SLOW_ALERT_WINDOW_SEC,
+            )
+            failed_15m = _count_events_since(
+                long_buf_snapshot,
+                now,
+                LOW_SLOW_BLOCK_WINDOW_SEC,
+            )
+            username = _most_common_username(long_buf_snapshot)
 
             feats = build_realtime_features(
                 event_times=timestamps,
@@ -147,7 +224,10 @@ def consumer_thread() -> None:
                     "ip": ip,
                     "now": now,
                     "feats": feats,
-                    "event_count": len(buf_snapshot),
+                    "event_count": len(window_snapshot),
+                    "failed_5m": failed_5m,
+                    "failed_15m": failed_15m,
+                    "username": username,
                 })
 
         if not drained:
@@ -180,15 +260,22 @@ def run_inference(task: dict, model, expected_features: list[str]) -> dict:
             src_ip=ip,
             now=now.to_pydatetime(),
             risk_score=float(risk["risk_score"]),
+            failed_5m=int(task.get("failed_5m", 0)),
+            failed_15m=int(task.get("failed_15m", 0)),
+            username=task.get("username"),
         )
 
     return {
         "ip": ip,
+        "username": task.get("username"),
         "now": str(now),
         "event_count": task["event_count"],
+        "failed_5m": task.get("failed_5m", 0),
+        "failed_15m": task.get("failed_15m", 0),
         "model_prob": round(model_prob, 4),
         "risk_score": round(float(risk["risk_score"]), 4),
         "action": decision["action"],
+        "reason": decision["reason"],
         "consecutive_suspicious": decision["consecutive_suspicious"],
     }
 
@@ -232,8 +319,10 @@ def _handle_result(result: dict) -> None:
 
     log_line = (
         f"ip={ip} events={result['event_count']} "
+        f"failed_5m={result.get('failed_5m', 0)} "
+        f"failed_15m={result.get('failed_15m', 0)} "
         f"p={result['model_prob']:.3f} risk={result['risk_score']:.3f} "
-        f"action={action}"
+        f"action={action} reason={result.get('reason')}"
     )
 
     if action == "NORMAL":
@@ -286,6 +375,13 @@ def main() -> None:
         expected_features = REALTIME_FEATURES
 
     log.info("Expected features: %s", expected_features)
+    log.info(
+        "Low-and-slow thresholds: failed_%ds>=%d ALERT, failed_%ds>=%d BLOCK",
+        LOW_SLOW_ALERT_WINDOW_SEC,
+        LOW_SLOW_ALERT_COUNT,
+        LOW_SLOW_BLOCK_WINDOW_SEC,
+        LOW_SLOW_BLOCK_COUNT,
+    )
     log.info("=== REALTIME SSH IDS STARTED ===")
     log.info("Alerts → %s", ALERTS_PATH)
 

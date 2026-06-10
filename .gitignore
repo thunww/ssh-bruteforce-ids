@@ -18,6 +18,7 @@ data/processed/
 outputs/reports/
 outputs/metrics/
 outputs/figures/
+outputs/scenario-runs/
 
 # Leftovers
 hydra.restore
